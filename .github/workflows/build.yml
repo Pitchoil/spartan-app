@@ -21,6 +21,15 @@ jobs:
           distribution: temurin
       - name: Install npm dependencies
         run: npm install
+      - name: Create www directory and copy web assets
+        run: |
+          mkdir -p www
+          cp index.html www/
+          cp app.js www/
+          cp style.css www/
+          cp manifest.json www/
+          cp sw.js www/
+          cp spartan_logo.png www/ || true
       - name: Add Android platform
         run: npx cap add android
       - name: Sync web assets into Android project
