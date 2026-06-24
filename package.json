@@ -1,0 +1,18 @@
+{
+  "name": "spartan-fitness",
+  "version": "1.0.0",
+  "description": "SpartanFitness App — Train Hard. Eat Right. Stay Spartan.",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm install && npx cap build android",
+    "dev": "echo Running in development mode"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "gradle": "^1.0.0"
+  }
+}
