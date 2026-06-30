@@ -6,263 +6,58 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="SpartanFit">
     <meta name="theme-color" content="#000000">
-    <meta name="description" content="SpartanFitness — Train Hard. Eat Right. Stay Spartan.">
-
     <title>SpartanFitness</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <style>
-        /* Extra mobile polish */
-        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-        .instruction-box { background:#111; padding:12px; border-radius:8px; margin-bottom:10px; white-space:pre-wrap; font-size:0.9rem; color:#ccc; line-height:1.6; }
-        .ai-box { background:#1a1a1a; border-left:3px solid var(--gold); padding:10px; border-radius:5px; margin-bottom:10px; font-size:0.9rem; color:#E6C288; }
-        .log-row { margin-bottom:10px; }
-        .log-row label { color:var(--gold); font-size:0.85rem; display:block; margin-bottom:4px; font-weight:bold; }
-        .add-user-btn { width:100%; padding:10px; background:var(--gold); color:black; border:none; font-weight:bold; border-radius:5px; margin-top:10px; cursor:pointer; }
-        .input-card { background:var(--card); padding:15px; border-radius:12px; margin-bottom:15px; border:1px solid #333; }
-        select.spartan-input { appearance:none; -webkit-appearance:none; }
-        .close { float:right; font-size:1.8rem; cursor:pointer; color:#aaa; line-height:1; }
-        .modal-content { max-height:90vh; overflow-y:auto; }
-    </style>
-</head>
-<body>
+        *{-webkit-tap-highlight-color:transparent;box-sizing:border-box;}
 
-    <!-- SPLASH SCREEN -->
-    <section id="splash-screen">
-        <button id="enter-btn" onclick="enterArena()">ENTER THE ARENA</button>
-        <div class="logo-container">
-            <img src="spartan_logo.png" alt="Spartan Fitness" id="splash-image">
-        </div>
-        <p class="dev-credit">Developed by Pawi</p>
-        <button onclick="emergencyReset()" style="margin-top:15px;background:none;border:none;color:#1a1a1a;font-size:10px;">Reset Data</button>
-    </section>
+        /* ── 3-column stats ──────────────────── */
+        .stats-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
+        .stat-card-sm{background:var(--card);border-radius:10px;padding:12px 6px;text-align:center;border:1px solid #2a2a2a;}
+        .stat-card-sm i{font-size:1.2rem;color:var(--gold);display:block;margin-bottom:4px;}
+        .stat-card-sm span{font-size:1.3rem;font-weight:bold;color:white;display:block;}
+        .stat-card-sm .stat-label{font-size:0.65rem;color:#666;margin-top:2px;}
+        .stat-card-sm.burn i{color:#2ecc71;}
+        .stat-card-sm.burn span{color:#2ecc71;}
 
-    <!-- MAIN APP -->
-    <div id="app-container" style="display:none;">
-        <header>
-            <div id="top-left-menu" class="user-select" onclick="toggleUserMenu()" style="opacity:0.5;pointer-events:none;">
-                <i class="fas fa-user"></i>&nbsp;<span id="current-user-name">Warrior</span>
-                <i id="trainer-caret" class="fas fa-caret-down" style="display:none"></i>
-            </div>
-            <div class="logo-text">⚔ SPARTAN</div>
-        </header>
+        /* ── Missed day button ───────────────── */
+        .missed-btn{width:100%;padding:10px;background:#1a1a1a;color:#aaa;border:1px dashed #444;
+            border-radius:8px;font-size:0.8rem;cursor:pointer;margin-top:10px;text-align:left;}
+        .missed-btn:hover{background:#222;}
 
-        <!-- USER MENU -->
-        <div id="user-menu" class="hidden-menu">
-            <h3 style="color:var(--gold);margin-top:0;">Client Roster</h3>
-            <div id="user-list-display"></div>
-            <button class="add-user-btn" onclick="createNewUser()"><i class="fas fa-plus"></i> Add New Client</button>
-        </div>
+        /* ── Weekly chart ────────────────────── */
+        .chart-area{background:#1a0808;border-radius:10px;padding:12px;margin-bottom:5px;}
+        .chart-row{display:flex;align-items:flex-end;height:60px;gap:2px;margin-bottom:4px;}
+        .chart-labels{display:flex;gap:2px;}
+        .chart-day-col{flex:1;display:flex;flex-direction:column;align-items:center;}
+        .chart-day-col .bar{width:80%;border-radius:3px 3px 0 0;transition:height .3s;}
+        .chart-day-col .day-lbl{font-size:10px;color:#888;margin-top:2px;}
+        .chart-day-col .sets-lbl{font-size:9px;color:#666;}
+        .chart-day-col .burn-lbl{font-size:9px;color:#2ecc71;}
+        .chart-progress-btn{width:100%;margin-top:8px;padding:7px;background:transparent;
+            border:1px solid #333;color:#888;border-radius:6px;font-size:0.75rem;cursor:pointer;}
+        .chart-progress-btn:hover{background:#222;color:#E6C288;}
 
-        <!-- REST TIMER OVERLAY -->
-        <div id="rest-overlay" class="rest-overlay" style="display:none;">
-            <div class="timer-content">
-                <span id="timer-label">REST</span>
-                <span id="timer-countdown">2:00</span>
-                <button onclick="stopTimer()" class="stop-btn"><i class="fas fa-times"></i></button>
-            </div>
-        </div>
-
-        <!-- ══ DASHBOARD ══ -->
-        <section id="dashboard" class="tab-content active">
-            <div class="welcome-banner">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                    <div>
-                        <h2 id="day-display" style="margin:0;">Loading...</h2>
-                        <p id="focus-display" style="color:#E6C288;font-style:italic;margin:5px 0;">...</p>
-                    </div>
-                    <i class="fas fa-shield-halved" style="font-size:2rem;color:rgba(255,255,255,0.2);"></i>
-                </div>
-                <div class="chart-container">
-                    <small style="color:#ddd;display:block;margin-bottom:5px;"><i class="fas fa-chart-bar"></i> Weekly Volume</small>
-                    <div id="weekly-chart" class="bar-chart"></div>
-                </div>
-            </div>
-
-            <div class="stats-row">
-                <div class="stat-card">
-                    <i class="fas fa-fire"></i>
-                    <span id="cal-display">0</span>
-                    <div class="stat-label">Today's Calories</div>
-                </div>
-                <div class="stat-card">
-                    <i class="fas fa-dumbbell"></i>
-                    <span id="workout-count">0</span>
-                    <div class="stat-label">Total Sets Logged</div>
-                </div>
-            </div>
-
-            <h3 style="border-bottom:1px solid #333;padding-bottom:10px;"><i class="fas fa-crosshairs" style="color:var(--primary)"></i> Today's Mission</h3>
-            <div id="todays-routine-list"></div>
-        </section>
-
-        <!-- ══ EXERCISE LIBRARY ══ -->
-        <section id="library" class="tab-content">
-            <h3 style="color:var(--gold);margin-top:0;"><i class="fas fa-book-open"></i> Exercise Library</h3>
-            <input type="text" id="search-ex" class="spartan-input" placeholder="Search by name or muscle (e.g. Chest, Legs)..." oninput="filterLibrary()">
-            <div id="library-list"></div>
-        </section>
-
-        <!-- ══ NUTRITION ══ -->
-        <section id="nutrition" class="tab-content">
-            <div style="display:flex;gap:10px;margin-bottom:15px;">
-                <button onclick="showNutriTab('track')" class="save-btn" style="flex:1;background:#c0392b;border:none;">📋 Daily Log</button>
-                <button onclick="showNutriTab('ideas')" class="save-btn" style="flex:1;background:#333;">🍽 Meal Ideas</button>
-            </div>
-
-            <!-- TRACK VIEW -->
-            <div id="nutri-track-view">
-                <div class="input-card">
-                    <h4 style="color:#E6C288;margin-top:0;"><i class="fas fa-plus-circle"></i> Log a Meal</h4>
-
-                    <label class="input-label">Meal Type</label>
-                    <select id="meal-type" class="spartan-input">
-                        <option value="Breakfast">🌅 Breakfast</option>
-                        <option value="Lunch">☀️ Lunch</option>
-                        <option value="Dinner">🌙 Dinner</option>
-                        <option value="Snack">🍌 Snack</option>
-                    </select>
-
-                    <label class="input-label">Food Item</label>
-                    <div style="display:flex;gap:10px;margin-bottom:15px;">
-                        <input type="text" id="food-name" class="spartan-input" placeholder="e.g. 2 doubles, stew chicken..." style="flex:1;margin-bottom:0;">
-                        <button onclick="autoFillMacros()" class="gold-btn" style="padding:0 15px;white-space:nowrap;">Auto Calc</button>
-                    </div>
-
-                    <div class="macro-grid">
-                        <div>
-                            <label class="input-label">Protein (g)</label>
-                            <input type="number" id="m-prot" class="spartan-input" placeholder="0">
-                        </div>
-                        <div>
-                            <label class="input-label">Carbs (g)</label>
-                            <input type="number" id="m-carb" class="spartan-input" placeholder="0">
-                        </div>
-                        <div>
-                            <label class="input-label">Fat (g)</label>
-                            <input type="number" id="m-fat" class="spartan-input" placeholder="0">
-                        </div>
-                    </div>
-
-                    <label class="input-label">Total Calories</label>
-                    <input type="number" id="m-cal" class="spartan-input" placeholder="0">
-                    <button onclick="logMeal()" class="save-btn" style="background:var(--primary);border:none;margin-top:5px;">
-                        <i class="fas fa-save"></i> Save to Daily Log
-                    </button>
-                </div>
-
-                <h3 style="border-bottom:1px solid #333;padding-bottom:8px;"><i class="fas fa-chart-pie"></i> Today's Totals</h3>
-                <div id="macro-display"></div>
-                <div id="meal-log-list" style="margin-top:10px;"></div>
-            </div>
-
-            <!-- MEAL IDEAS VIEW -->
-            <div id="nutri-ideas-view" style="display:none;">
-                <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:15px;padding-bottom:5px;">
-                    <button class="filter-chip" onclick="filterMeals('Breakfast')">🌅 Breakfast</button>
-                    <button class="filter-chip" onclick="filterMeals('Lunch')">☀️ Lunch</button>
-                    <button class="filter-chip" onclick="filterMeals('Dinner')">🌙 Dinner</button>
-                    <button class="filter-chip" onclick="filterMeals('Snack')">🍌 Snack</button>
-                </div>
-                <div id="meal-prep-container"></div>
-            </div>
-        </section>
-
-        <!-- ══ PROFILE ══ -->
-        <section id="profile" class="tab-content">
-            <h2 style="color:#E6C288;"><i class="fas fa-user-circle"></i> Profile</h2>
-
-            <label class="input-label">Name</label>
-            <input type="text" id="p-name" class="spartan-input">
-
-            <label class="input-label">Gender</label>
-            <select id="p-gender" class="spartan-input">
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-            </select>
-
-            <label class="input-label">Goal</label>
-            <select id="p-goal" class="spartan-input">
-                <option value="shred">🔥 Shred / Lose Weight</option>
-                <option value="tone">💪 Tone / Firm Up</option>
-                <option value="bulk">⚡ Bulk / Build Strength</option>
-            </select>
-
-            <div style="margin-top:20px;background:#1a1a1a;padding:15px;border-radius:10px;border:1px solid #333;">
-                <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
-                    <span style="font-weight:bold;color:#E6C288;"><i class="fas fa-chalkboard-user"></i> Trainer Mode</span>
-                    <input type="checkbox" id="p-trainer-mode" onchange="toggleTrainerMode()" style="transform:scale(1.5);">
-                </label>
-                <p style="color:#666;font-size:0.8rem;margin:8px 0 0 0;">Enables client switching and management.</p>
-            </div>
-
-            <button onclick="saveProfile()" class="save-btn" style="margin-top:20px;background:var(--primary);border:none;">
-                <i class="fas fa-save"></i> Save Profile
-            </button>
-
-            <div class="danger-zone">
-                <h3 style="color:#e74c3c;margin-bottom:10px;"><i class="fas fa-triangle-exclamation"></i> Data Management</h3>
-                <button onclick="resetCurrentUserData()" class="danger-btn"><i class="fas fa-undo"></i> Reset Current User Data</button>
-                <button onclick="deleteCurrentUser()" class="danger-btn"><i class="fas fa-user-times"></i> Delete This User</button>
-                <button onclick="emergencyReset()" class="danger-btn full-reset"><i class="fas fa-bomb"></i> Factory Reset App</button>
-            </div>
-        </section>
-
-        <!-- ══ EXERCISE TRACKER MODAL ══ -->
-        <div id="tracker-modal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal()">&times;</span>
-                <h2 id="m-title" style="color:var(--gold);margin-top:0;">Exercise</h2>
-
-                <div class="instruction-box">
-                    <p id="m-desc" style="margin:0;"></p>
-                </div>
-
-                <div class="unit-toggle">
-                    <div id="unit-kg"  class="unit-opt active" onclick="setUnit('kg')">KG</div>
-                    <div id="unit-lbs" class="unit-opt"        onclick="setUnit('lbs')">LBS</div>
-                </div>
-
-                <div id="m-ai-msg" class="ai-box"></div>
-                <div id="sets-history" class="history-container"></div>
-
-                <div class="log-row">
-                    <label id="weight-label">Weight (KG)</label>
-                    <input type="number" id="log-w" class="spartan-input" placeholder="e.g. 60">
-                </div>
-                <div class="log-row">
-                    <label>Reps</label>
-                    <input type="number" id="log-r" class="spartan-input" placeholder="e.g. 10">
-                </div>
-
-                <button onclick="saveSet()" class="log-btn" style="background:var(--primary);color:white;border:none;">
-                    <i class="fas fa-plus"></i> LOG SET
-                </button>
-                <button onclick="startRestTimer(90,'REST')" class="timer-btn">
-                    <i class="fas fa-stopwatch"></i> Start Rest Timer (90s)
-                </button>
-            </div>
-        </div>
-
-        <!-- ══ BOTTOM NAV ══ -->
-        <nav>
-            <button onclick="nav('dashboard')" class="active"><i class="fas fa-home"></i></button>
-            <button onclick="nav('library')"><i class="fas fa-dumbbell"></i></button>
-            <button onclick="nav('nutrition')"><i class="fas fa-apple-alt"></i></button>
-            <button onclick="nav('profile')"><i class="fas fa-user-circle"></i></button>
-        </nav>
-    </div>
-
-    <script src="app.js"></script>
-    <script>
-        // Register service worker for offline caching
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(() => {});
-        }
-    </script>
-</body>
-</html>
+        /* ── Progress history modal ──────────── */
+        #progress-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);
+            z-index:9999;flex-direction:column;overflow:hidden;}
+        .prog-modal-inner{background:#111;width:100%;height:100%;display:flex;flex-direction:column;}
+        .prog-header{display:flex;align-items:center;justify-content:space-between;
+            padding:14px 16px;border-bottom:1px solid #222;background:#0d0d0d;}
+        .prog-header h3{margin:0;color:var(--gold);font-size:1rem;}
+        .prog-nav{display:flex;align-items:center;gap:8px;}
+        .prog-nav button{background:#222;border:1px solid #333;color:#aaa;padding:6px 12px;
+            border-radius:6px;cursor:pointer;font-size:0.85rem;}
+        .prog-nav button:disabled{opacity:.3;cursor:default;}
+        #prog-week-label{color:#E6C288;font-size:0.85rem;font-weight:bold;text-align:center;}
+        .prog-body{flex:1;overflow-y:auto;padding:14px 16px;}
+        .prog-stat-card{background:#1a1a1a;border:1px solid #333;border-radius:8px;
+            padding:10px;text-align:center;}
+        .prog-stat-card b{font-size:1.3rem;display:block;color:white;}
+        .prog-stat-card small{color:#666;font-size:0.72rem;}
+        .prog-close-btn{width:calc(100% - 32px);margin:0 16px 16px;padding:12px;
+            background:var(--primary);border:none;color:white;border-radius:8px;
+ 
