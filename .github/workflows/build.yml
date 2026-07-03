@@ -1,4 +1,4 @@
-name: Build SpartanFit v4 APK
+name: Build SpartanFit APK
 
 on:
   push:
@@ -38,53 +38,16 @@ jobs:
       - name: Accept SDK licenses
         run: yes | sdkmanager --licenses || true
 
-      - name: Install ImageMagick
-        run: sudo apt-get install -y imagemagick
-
-      - name: Generate app icons
-        run: |
-          # Check if source image exists and is valid
-          if [ ! -f "www/spartan_logo.png" ]; then
-            echo "Error: www/spartan_logo.png not found"
-            exit 1
-          fi
-          
-          # Verify image is readable
-          if ! identify www/spartan_logo.png > /dev/null 2>&1; then
-            echo "Error: www/spartan_logo.png is not a valid image"
-            exit 1
-          fi
-          
-          # Generate icons for each density
-          for entry in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
-            density="${entry%%:*}"
-            size="${entry##*:}"
-            dir="android/app/src/main/res/mipmap-${density}"
-            mkdir -p "$dir"
-            
-            # Convert with explicit format specification
-            convert "www/spartan_logo.png[0]" -colorspace sRGB -resize "${size}x${size}!" -background "#000000" -gravity center -extent "${size}x${size}" -format png "$dir/ic_launcher.png"
-            convert "www/spartan_logo.png[0]" -colorspace sRGB -resize "${size}x${size}!" -background "#000000" -gravity center -extent "${size}x${size}" -format png "$dir/ic_launcher_round.png"
-            
-            # Verify output
-            if [ ! -f "$dir/ic_launcher.png" ]; then
-              echo "Error: Failed to generate $dir/ic_launcher.png"
-              exit 1
-            fi
-          done
-          
-          echo "App icons generated successfully"
-
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
       - name: Build debug APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SpartanFit-v4-APK
+          name: SpartanFit-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
