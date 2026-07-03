@@ -17,7 +17,28 @@ const PORTION_SOLID={piece:120,slice:80,strip:30,chunk:150,fillet:150,breast:150
 const PORTION_LIQUID_ML={cup:240,glass:240,bowl:300,mug:240,bottle:500,can:355,shot:44,flask:200};
 
 /* SIZE MODIFIERS */
-const SIZE_MAP={'tiny':0.40,'mini':0.50,'half':0.50,'small':0.65,'sm':0.65,'sml':0.65,'lite':0.60,'medium':1.0,'med':1.0,'regular':1.0,'normal':1.0,'standard':1.0,'large':1.50,'lg':1.50,'big':1.50,'lrg':1.50,'xl':2.0,'xlarge':2.0,'double':2.0,'jumbo':2.2,'huge':2.5};
+const SIZE_MAP = {
+  tiny: 0.40,
+  mini: 0.50,
+  half: 0.50,
+  small: 0.65,
+  sm: 0.65,
+  sml: 0.65,
+  lite: 0.60,
+  medium: 1.00,
+  med: 1.00,
+  regular: 1.00,
+  normal: 1.00,
+  standard: 1.00,
+  large: 1.50,
+  lg: 1.50,
+  big: 1.50,
+  xl: 2.00,
+  xlarge: 2.00,
+  double: 2.00,
+  jumbo: 2.20,
+  huge: 2.50
+};
 
 const exerciseDB=[];
 const foodLibrary=[];
@@ -29,22 +50,22 @@ let users=[],activeUserIndex=0,timerInterval=null,currentTimerVal=0,currentUnit=
 
 /* INIT */
 function enterArena(){document.getElementById('splash-screen').style.display='none';document.getElementById('app-container').style.display='flex';initApp();}
-function initApp(){try{const s=localStorage.getItem('spartanUsers');if(s){users=JSON.parse(s);const u=users[activeUserIndex];if(!u.nutritionLogs)u.nutritionLogs=[];if(!u.completedToday)u.completedToday=[];if(!u.missedDays)u.missedDays=[];if(!u.weightLog)u.weightLog=[];if(!u.goal)u.goal='shred';}else{createDefaultUser();}updateUI();setTimeout(checkWeightReminder,1000);}catch(e){createDefaultUser();updateUI();}}
-function createDefaultUser(){users=[{id:Date.now(),name:"Warrior",trainerMode:false,gender:'male',goal:'shred',history:[],nutritionLogs:[],completedToday:[],missedDays:[],weightLog:[],bodyWeight:75,bodyWeightDisplay:75,bodyWeightUnit:'kg'}];saveData();}
+function initApp(){try{const s=localStorage.getItem('spartanUsers');if(s){users=JSON.parse(s);const u=users[activeUserIndex];if(!u.nutritionLogs)u.nutritionLogs=[];if(!u.completedToday)u.completedToday=[];if(!u.missedDays)u.missedDays=[];if(!u.weightLog)u.weightLog=[];if(!u.bodyWeight)u.bodyWeight=75;}else{createDefaultUser()}updateUI();setTimeout(checkWeightReminder,1000);}catch(e){createDefaultUser();updateUI();}}
+function createDefaultUser(){users=[{id:Date.now(),name:"Warrior",trainerMode:false,gender:'male',goal:'shred',history:[],nutritionLogs:[],completedToday:[],missedDays:[],weightLog:[],bodyWeight:75}];saveData();}
 
 /* UI UPDATE */
-function updateUI(){const u=users[activeUserIndex];document.getElementById('current-user-name').innerText=u.name;const mb=document.getElementById('top-left-menu');if(u.trainerMode){mb.style.opacity="1";mb.style.pointerEvents="auto";document.getElementById('trainer-caret').style.display="inline";}else{mb.style.opacity="0.5";mb.style.pointerEvents="none";document.getElementById('trainer-caret').style.display="none";}loadDailyRoutine(u);}
+function updateUI(){const u=users[activeUserIndex];document.getElementById('current-user-name').innerText=u.name;const mb=document.getElementById('top-left-menu');if(u.trainerMode){mb.style.opacity=1;mb.style.pointerEvents='auto';document.getElementById('trainer-cart').style.display='inline'}else{mb.style.opacity=0.5;mb.style.pointerEvents='none';document.getElementById('trainer-cart').style.display='none';}loadDailyRoutine(u)}
 
 /* DAILY ROUTINE */
 function loadDailyRoutine(u){const d=new Date().getDay();document.getElementById('day-display').innerText=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d];const l=document.getElementById('todays-routine-list');l.innerHTML='';}
 
 /* PROFILE */
-function saveProfile(){const u=users[activeUserIndex];u.name=document.getElementById('p-name').value;u.gender=document.getElementById('p-gender').value;u.goal=document.getElementById('p-goal').value;saveData();updateUI();alert("✅ Profile saved!");}
+function saveProfile(){const u=users[activeUserIndex];u.name=document.getElementById('p-name').value;u.gender=document.getElementById('p-gender').value;u.goal=document.getElementById('p-goal').value;saveData();updateUI();}
 function toggleTrainerMode(){users[activeUserIndex].trainerMode=document.getElementById('p-trainer-mode').checked;saveData();updateUI();}
 function emergencyReset(){if(confirm("⚠️ FACTORY RESET?")){localStorage.removeItem('spartanUsers');location.reload();}}
 
 /* NAVIGATION */
-function nav(id){document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));document.querySelectorAll('nav button').forEach(e=>e.classList.remove('active'));document.getElementById(id).classList.add('active');if(event.currentTarget)event.currentTarget.classList.add('active');}
+function nav(id){document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));document.querySelectorAll('nav button').forEach(e=>e.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelector(`nav button[data-target="${id}"]`).classList.add('active');}
 function saveData(){localStorage.setItem('spartanUsers',JSON.stringify(users));}
 
 /* STUBS */
