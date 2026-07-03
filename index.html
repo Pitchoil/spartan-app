@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>SpartanFitness</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+
+/* ── STATS ROW (3 cols) ──────── */
+.stats-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-sm{background:var(--card);border-radius:10px;padding:10px 6px;text-align:center;border:1px solid #222}
+.stat-sm i{font-size:1.1rem;color:var(--gold);display:block;margin-bottom:3px}
+.stat-sm .sv{font-size:1.4rem;font-weight:bold;color:#fff;display:block}
+.stat-sm .sl{font-size:0.62rem;color:#666;margin-top:2px}
+.stat-sm.burn i,.stat-sm.burn .sv{color:#2ecc71}
+
+/* ── WEIGHT STRIP ────────────── */
+.weight-strip{display:flex;align-items:center;justify-content:space-between;
+  background:#141414;border:1px solid #222;border-radius:10px;padding:10px 14px;margin-bottom:12px}
+.weight-strip .wlabel{color:#888;font-size:0.78rem}
+.weight-strip .wval{color:#E6C288;font-weight:bold;font-size:1.1rem}
+.weight-strip .wedit{background:none;border:1px solid #333;color:#aaa;padding:4px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer}
+
+/* ── WEIGHT REMINDER ─────────── */
+.weight-reminder{display:none;background:#1a1400;border:1px solid #f39c12;border-radius:10px;
+  padding:10px 14px;margin-bottom:12px;align-items:center;gap:10px}
+.weight-reminder p{margin:0;color:#f39c12;font-size:0.82rem;flex:1}
+.weight-reminder button{background:var(--gold);border:none;color:#000;padding:6px 12px;border-radius:6px;font-weight:bold;font-size:0.75rem;cursor:pointer;white-space:nowrap}
+
+/* ── CHART AREA ──────────────── */
+.chart-area{background:#0a0a0a;border-radius:12px;padding:12px;margin-bottom:5px;overflow:hidden}
+.chart-review-btn{width:100%;margin-top:8px;padding:8px;background:transparent;border:1px solid #2a2a2a;
+  color:#777;border-radius:6px;font-size:0.75rem;cursor:pointer}
+.chart-review-btn:hover{background:#1a1a1a;color:#E6C288}
+
+/* ── MISSED DAY BTN ──────────── */
+.missed-btn{width:100%;padding:10px 14px;background:#111;color:#888;border:1px dashed #333;
+  border-radius:8px;font-size:0.78rem;cursor:pointer;text-align:left;margin-bottom:10px}
+
+/* ── LIBRARY 2-COL ───────────── */
+.lib-section-header{padding:8px 12px;margin:12px 0 4px;border-radius:6px}
+.lib-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:2px}
+.lib-card{background:var(--card);border:1px solid #2a2a2a;border-radius:8px;padding:10px;
+  cursor:pointer;transition:background .15s;min-height:52px}
+.lib-card:active{background:#2a2a2a}
+.lib-card b{font-size:0.8rem;line-height:1.3;display:block}
+
+/* ── TRACKER MODAL ───────────── */
+.modal-content{max-height:90vh;overflow-y:auto;padding:20px}
+.close{float:right;font-size:1.8rem;cursor:pointer;color:#aaa;line-height:1}
+.instruction-box{background:#111;padding:14px;border-radius:8px;margin-bottom:12px;
+  white-space:pre-wrap;font-size:0.88rem;color:#ccc;line-height:1.65}
+.prog-tip-box{background:#0d1a0d;border-left:3px solid #2ecc71;padding:9px 12px;
+  border-radius:0 6px 6px 0;margin-bottom:10px;font-size:0.82rem;color:#2ecc71}
+.pr-badge{background:#E6C288;color:#000;font-size:0.7rem;font-weight:bold;
+  padding:2px 7px;border-radius:10px;display:none;margin-top:4px}
+.log-row{margin-bottom:12px}
+.log-row label{color:var(--gold);font-size:0.85rem;display:block;margin-bottom:5px;font-weight:bold}
+#cardio-fields{display:none}
+.cardio-hdr{background:#0d2b1f;border-left:4px solid #2ecc71;padding:10px 14px;
+  border-radius:6px;margin-bottom:12px;color:#2ecc71;font-weight:bold;font-size:.88rem}
+.cardio-est{color:#2ecc71;font-size:0.78rem;margin:4px 0 8px;min-height:18px}
+.log-btn{width:100%;padding:16px;font-size:1rem;font-weight:bold;border-radius:8px;
+  cursor:pointer;margin-top:5px;letter-spacing:1px}
+
+/* ── PROGRESS MODAL ──────────── */
+#progress-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);
+  z-index:9999;flex-direction:column}
+.prog-inner{background:#0d0d0d;width:100%;height:100%;display:flex;flex-direction:column}
+.prog-header{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid #1e1e1e;background:#090909}
+.prog-header h3{margin:0;color:var(--gold);font-size:1rem}
+.prog-nav{display:flex;align-items:center;gap:6px}
+.prog-nav button{background:#1a1a1a;border:1px solid #333;color:#aaa;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:0.82rem}
+.prog-nav button:disabled{opacity:.3;cursor:default}
+#prog-week-label{color:#E6C288;font-size:0.85rem;font-weight:bold}
+.prog-body{flex:1;overflow-y:auto;padding:14px}
+.prog-stat-card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:10px;text-align:center}
+.prog-stat-card b{font-size:1.3rem;display:block;color:#fff}
+.prog-stat-card small{color:#666;font-size:0.7rem}
+.prog-day-row{background:#131313;border:1px solid #1e1e1e;border-radius:8px;padding:10px;margin-bottom:7px;cursor:pointer;transition:background .15s}
+.prog-day-row:active{background:#1e1e1e}
+.prog-day-today{border-color:#E6C28844;background:#1a1500}
+.prog-close-btn{width:calc(100% - 28px);margin:0 14px 14px;padding:13px;background:var(--primary);border:none;color:#fff;border-radius:8px;font-weight:bold;cursor:pointer;font-size:1rem}
+
+/* ── DAY DETAIL MODAL ────────── */
+#day-detail-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;flex-direction:column}
+.dd-inner{background:#0d0d0d;width:100%;height:100%;display:flex;flex-direction:column}
+.dd-header{padding:14px 16px;border-bottom:1px solid #1e1e1e;background:#090909;display:flex;justify-content:space-between;align-items:center}
+.dd-body{flex:1;overflow-y:auto;padding:14px}
+.dd-close{background:#1a1a1a;border:1px solid #333;color:#aaa;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem}
+
+/* ── WEIGHT MODAL ────────────── */
+#weight-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;align-items:center;justify-content:center}
+.wm-inner{background:#131313;border:1px solid #333;border-radius:16px;padding:20px;width:90%;max-width:360px}
+.wm-inner h3{color:var(--gold);margin:0 0 16px}
+
+/* ── PRE-HISTORY MODAL ───────── */
+#prehistory-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:9999;flex-direction:column}
+.ph-inner{background:#0d0d0d;width:100%;height:100%;display:flex;flex-direction:column}
+.ph-header{padding:14px 16px;border-bottom:1px solid #1e1e1e;background:#090909;display:flex;justify-content:space-between;align-items:center}
+.ph-header h3{margin:0;color:var(--gold);font-size:1rem}
+.ph-body{flex:1;overflow-y:auto;padding:14px}
+.ph-ex-option{padding:10px;background:#1a1a1a;border-radius:6px;margin-bottom:5px;cursor:pointer;border:1px solid #2a2a2a}
+.ph-ex-option:active{background:#2a2a2a}
+#ph-log-section{display:none;margin-top:12px}
+.ph-close{background:#1a1a1a;border:1px solid #333;color:#aaa;padding:6px 14px;border-radius:6px;cursor:pointer}
+
+/* ── BMI SECTION ─────────────── */
+.bmi-section{background:#111;border:1px solid #222;border-radius:12px;padding:15px;margin-top:16px}
+.bmi-section h3{color:var(--gold);margin:0 0 12px;font-size:0.95rem}
+.height-unit-row{display:flex;gap:8px;margin-bottom:10px}
+.height-unit-row label{display:flex;align-items:center;gap:5px;cursor:pointer;color:#aaa;font-size:0.85rem}
+#height-ft-wrap{display:none;gap:8px}
+.bmi-result-card{background:#0d0d0d;border:1px solid #222;border-radius:10px;padding:14px;margin-top:10px}
+.bmi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.bmi-stat{background:#1a1a1a;border-radius:8px;padding:8px;text-align:center}
+.bmi-stat b{display:block;font-size:1rem;color:#fff}
+.bmi-stat small{color:#666;font-size:0.68rem}
+
+/* ── INPUT CARDS ─────────────── */
+.input-card{background:var(--card);padding:15px;border-radius:12px;margin-bottom:15px;border:1px solid #2a2a2a}
+select.spartan-input{appearance:none;-webkit-appearance:none}
+.macro-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.add-user-btn{width:100%;padding:10px;background:var(--gold);color:#000;border:none;font-weight:bold;border-radius:5px;margin-top:10px;cursor:pointer}
+
+/* ── MISC ────────────────────── */
+.danger-zone{background:#110000;border:1px solid #3a0000;border-radius:10px;padding:14px;margin-top:20px}
+.danger-btn{width:100%;padding:10px;background:#1a0000;color:#e74c3c;border:1px solid #3a0000;border-radius:6px;margin-top:8px;cursor:pointer;font-size:0.85rem}
+.full-reset{border-color:#7a0000!important;color:#ff4444!important}
+</style>
+</head>
+<body>
+
+<!-- ══ SPLASH ══════════════════════════════════════════════ -->
+<section id="splash-screen">
+ <button id="enter-btn" onclick="enterArena()">ENTER THE ARENA</button>
+ <div class="logo-container">
+  <img src="spartan_logo.png" alt="Spartan Fitness" id="splash-image">
+ </div>
+ <p class="dev-credit">Developed by Pawi</p>
+ <button onclick="emergencyReset()" style="margin-top:15px;background:none;border:none;color:#1a1a1a;font-size:10px">Reset Data</button>
+</section>
+
+<!-- ══ MAIN APP ═════════════════════════════════════════════ -->
+<div id="app-container" style="display:none">
+
+ <header>
+  <div id="top-left-menu" class="user-select" onclick="toggleUserMenu()" style="opacity:.5;pointer-events:none">
+   <i class="fas fa-user"></i>&nbsp;<span id="current-user-name">Warrior</span>
+   <i id="trainer-caret" class="fas fa-caret-down" style="display:none"></i>
+  </div>
+  <div class="logo-text">⚔ SPARTAN</div>
+ </header>
+
+ <!-- User menu -->
+ <div id="user-menu" class="hidden-menu">
+  <h3 style="color:var(--gold);margin-top:0">Client Roster</h3>
+  <div id="user-list-display"></div>
+  <button class="add-user-btn" onclick="createNewUser()"><i class="fas fa-plus"></i> Add New Client</button>
+ </div>
+
+ <!-- Rest timer -->
+ <div id="rest-overlay" class="rest-overlay" style="display:none">
+  <div class="timer-content">
+   <span id="timer-label">REST</span>
+   <span id="timer-countdown">2:00</span>
+   <button onclick="stopTimer()" class="stop-btn"><i class="fas fa-times"></i></button>
+  </div>
+ </div>
+
+ <!-- ══ PROGRESS MODAL ══════════════════════════════════════ -->
+ <div id="progress-modal">
+  <div class="prog-inner">
+   <div class="prog-header">
+    <h3><i class="fas fa-chart-line" style="color:var(--gold)"></i> Weekly Progress</h3>
+    <div class="prog-nav">
+     <button id="prog-prev" onclick="navProgressWeek(-1)">← Prev</button>
+     <button id="prog-next" onclick="navProgressWeek(1)">Next →</button>
+    </div>
+   </div>
+   <div style="padding:10px 16px;border-bottom:1px solid #1e1e1e;text-align:center">
+    <span id="prog-week-label">Loading...</span>
+   </div>
+   <div class="prog-body" id="prog-content">Loading...</div>
+   <button class="prog-close-btn" onclick="closeProgressModal()">Close</button>
+  </div>
+ </div>
+
+ <!-- ══ DAY DETAIL MODAL ════════════════════════════════════ -->
+ <div id="day-detail-modal">
+  <div class="dd-inner">
+   <div class="dd-header">
+    <h3 id="day-detail-title" style="margin:0;color:var(--gold);font-size:0.95rem">Day Detail</h3>
+    <button class="dd-close" onclick="closeDayDetail()">✕ Close</button>
+   </div>
+   <div class="dd-body" id="day-detail-content">Loading...</div>
+  </div>
+ </div>
+
+ <!-- ══ WEIGHT MODAL ════════════════════════════════════════ -->
+ <div id="weight-modal">
+  <div class="wm-inner">
+   <h3>⚖️ Log Body Weight</h3>
+   <label class="input-label">Weight</label>
+   <div style="display:flex;gap:8px;margin-bottom:16px">
+    <input type="number" id="body-weight-val" class="spartan-input" placeholder="e.g. 75" style="flex:1;margin-bottom:0">
+    <select id="body-weight-unit" class="spartan-input" style="width:80px;margin-bottom:0">
+     <option value="kg">kg</option>
+     <option value="lbs">lbs</option>
+    </select>
+   </div>
+   <button onclick="saveBodyWeight()" class="save-btn" style="background:var(--primary);border:none">
+    <i class="fas fa-save"></i> Save Weight
+   </button>
+   <button onclick="closeWeightModal()" style="width:100%;padding:10px;background:none;border:1px solid #333;color:#888;border-radius:8px;margin-top:8px;cursor:pointer">
+    Cancel
+   </button>
+  </div>
+ </div>
+
+ <!-- ══ PRE-HISTORY MODAL ═══════════════════════════════════ -->
+ <div id="prehistory-modal">
+  <div class="ph-inner">
+   <div class="ph-header">
+    <h3>📅 Add Past Workout Data</h3>
+    <button class="ph-close" onclick="closePreHistory()">✕ Close</button>
+   </div>
+   <div class="ph-body">
+    <p style="color:#888;font-size:0.82rem;margin-top:0">Enter exercises you completed before using this app. This builds your historical chart and progression data.</p>
+
+    <label class="input-label">Date</label>
+    <input type="date" id="ph-date" class="spartan-input" style="margin-bottom:14px">
+
+    <label class="input-label">Search Exercise</label>
+    <input type="text" id="ph-ex-search" class="spartan-input" placeholder="e.g. Bench Press, Deadlift..." oninput="searchPreHistoryExercise()">
+    <div id="ph-ex-results" style="margin-bottom:10px"></div>
+
+    <div id="ph-log-section">
+     <div id="ph-is-cardio-strength">
+      <label class="input-label">Number of Sets</label>
+      <input type="number" id="ph-sets" class="spartan-input" placeholder="e.g. 4" min="1" max="20">
+      <label class="input-label">Weight / Duration</label>
+      <input type="text" id="ph-weight" class="spartan-input" placeholder="e.g. 80 (kg or mins for cardio)">
+      <label class="input-label">Reps (leave blank for cardio)</label>
+      <input type="text" id="ph-reps" class="spartan-input" placeholder="e.g. 10">
+     </div>
+     <button onclick="savePreHistoryEntry()" class="save-btn" style="background:var(--primary);border:none;margin-top:10px">
+      <i class="fas fa-plus"></i> Add This Entry
+     </button>
+    </div>
+
+    <div style="background:#0d2b1f;border:1px solid #1a4a2f;border-radius:8px;padding:10px;margin-top:20px">
+     <p style="color:#2ecc71;font-size:0.8rem;margin:0">✅ <b>Tip:</b> Add multiple entries to build your history. Each entry appears in your weekly graphs and progression tracking.</p>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <!-- ══ DASHBOARD ════════════════════════════════════════════ -->
+ <section id="dashboard" class="tab-content active">
+  <div class="welcome-banner">
+   <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div>
+     <h2 id="day-display" style="margin:0;font-size:1.6rem">Loading...</h2>
+     <p id="focus-display" style="color:#E6C288;font-style:italic;margin:4px 0 0;font-size:0.9rem">...</p>
+    </div>
+    <i class="fas fa-shield-halved" style="font-size:1.8rem;color:rgba(255,255,255,.15)"></i>
+   </div>
+   <!-- SVG Dual-Line Chart -->
+   <div class="chart-area">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+     <span style="color:#5b8dd9;font-size:0.72rem;font-weight:600">■ Volume (kg/lb)</span>
+     <span style="color:#e67e22;font-size:0.72rem;font-weight:600">■ Calories Burned 🔥</span>
+    </div>
+    <div id="weekly-chart-svg" style="height:130px"></div>
+    <button class="chart-review-btn" onclick="showProgressModal()">
+     <i class="fas fa-history"></i> Review Past Weeks
+    </button>
+   </div>
+  </div>
+
+  <!-- Weight reminder banner -->
+  <div class="weight-reminder" id="weight-reminder">
+   <p>⚖️ Time to log your weekly weight!</p>
+   <button onclick="openWeightModal()">Log Now</button>
+  </div>
+
+  <!-- 3-stat cards -->
+  <div class="stats-row-3">
+   <div class="stat-sm">
+    <i class="fas fa-fire"></i>
+    <span class="sv" id="cal-display">0</span>
+    <div class="sl">Cal Eaten</div>
+   </div>
+   <div class="stat-sm">
+    <i class="fas fa-dumbbell"></i>
+    <span class="sv" id="workout-count">0</span>
+    <div class="sl">Sets Today</div>
+   </div>
+   <div class="stat-sm burn">
+    <i class="fas fa-bolt"></i>
+    <span class="sv" id="cal-burn-display">0</span>
+    <div class="sl">Cal Burned</div>
+   </div>
+  </div>
+
+  <!-- Weight strip -->
+  <div class="weight-strip">
+   <div>
+    <div class="wlabel">⚖️ Body Weight</div>
+    <div class="wval" id="weight-display">-- kg</div>
+   </div>
+   <button class="wedit" onclick="openWeightModal()">Update</button>
+  </div>
+
+  <!-- Today's Mission header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222;padding-bottom:8px;margin-bottom:10px">
+   <h3 style="margin:0"><i class="fas fa-crosshairs" style="color:var(--primary)"></i> Today's Mission</h3>
+  </div>
+
+  <!-- Missed day -->
+  <button id="missed-day-btn" class="missed-btn" onclick="markMissedDay()">
+   ☐ Mark Today as Missed — Routine rolls to tomorrow
+  </button>
+
+  <div id="todays-routine-list"></div>
+ </section>
+
+ <!-- ══ EXERCISE LIBRARY ══════════════════════════════════════ -->
+ <section id="library" class="tab-content">
+  <h3 style="color:var(--gold);margin-top:0"><i class="fas fa-book-open"></i> Exercise Library</h3>
+  <input type="text" id="search-ex" class="spartan-input" placeholder="Search muscle or exercise..." oninput="filterLibrary()">
+  <div id="library-list" style="margin-top:10px"></div>
+ </section>
+
+ <!-- ══ NUTRITION ═════════════════════════════════════════════ -->
+ <section id="nutrition" class="tab-content">
+  <div style="display:flex;gap:10px;margin-bottom:14px">
+   <button onclick="showNutriTab('track')" class="save-btn" style="flex:1;background:#c0392b;border:none">📋 Daily Log</button>
+   <button onclick="showNutriTab('ideas')" class="save-btn" style="flex:1;background:#333">🍽 Meal Ideas</button>
+  </div>
+
+  <div id="nutri-track-view">
+   <div class="input-card">
+    <h4 style="color:#E6C288;margin-top:0"><i class="fas fa-plus-circle"></i> Log a Meal</h4>
+    <label class="input-label">Meal Type</label>
+    <select id="meal-type" class="spartan-input">
+     <option value="Breakfast">🌅 Breakfast</option>
+     <option value="Lunch">☀️ Lunch</option>
+     <option value="Dinner">🌙 Dinner</option>
+     <option value="Snack">🍌 Snack</option>
+    </select>
+    <label class="input-label" style="margin-top:12px">Food Item</label>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+     <input type="text" id="food-name" class="spartan-input" style="flex:1;margin-bottom:0"
+      placeholder="e.g. 2 small pieces chicken + 1lb rice">
+     <button onclick="autoFillMacros()" class="gold-btn" style="padding:0 12px;white-space:nowrap;font-weight:bold">Auto Calc</button>
+    </div>
+    <p style="color:#555;font-size:0.72rem;margin:0 0 10px">Supports: small/medium/large, pieces, cups, lbs, kg, grams</p>
+    <div class="macro-grid">
+     <div><label class="input-label">Protein (g)</label><input type="number" id="m-prot" class="spartan-input" placeholder="0"></div>
+     <div><label class="input-label">Carbs (g)</label><input type="number" id="m-carb" class="spartan-input" placeholder="0"></div>
+     <div><label class="input-label">Fat (g)</label><input type="number" id="m-fat" class="spartan-input" placeholder="0"></div>
+    </div>
+    <label class="input-label">Total Calories</label>
+    <input type="number" id="m-cal" class="spartan-input" placeholder="0">
+    <button onclick="logMeal()" class="save-btn" style="background:var(--primary);border:none;margin-top:10px">
+     <i class="fas fa-save"></i> Save to Daily Log
+    </button>
+   </div>
+   <h3 style="border-bottom:1px solid #222;padding-bottom:8px"><i class="fas fa-chart-pie"></i> Today's Totals</h3>
+   <div id="macro-display"></div>
+   <div id="meal-log-list" style="margin-top:10px"></div>
+  </div>
+
+  <div id="nutri-ideas-view" style="display:none">
+   <div style="display:flex;gap:5px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px">
+    <button class="filter-chip" onclick="filterMeals('Breakfast')">🌅 Breakfast</button>
+    <button class="filter-chip" onclick="filterMeals('Lunch')">☀️ Lunch</button>
+    <button class="filter-chip" onclick="filterMeals('Dinner')">🌙 Dinner</button>
+    <button class="filter-chip" onclick="filterMeals('Snack')">🍌 Snack</button>
+   </div>
+   <div id="meal-prep-container"></div>
+  </div>
+ </section>
+
+ <!-- ══ PROFILE ════════════════════════════════════════════════ -->
+ <section id="profile" class="tab-content">
+  <h2 style="color:#E6C288"><i class="fas fa-user-circle"></i> Profile</h2>
+
+  <label class="input-label">Name</label>
+  <input type="text" id="p-name" class="spartan-input">
+
+  <label class="input-label">Gender</label>
+  <select id="p-gender" class="spartan-input">
+   <option value="male">Male</option>
+   <option value="female">Female</option>
+  </select>
+
+  <label class="input-label">Goal</label>
+  <select id="p-goal" class="spartan-input">
+   <option value="shred">🔥 Shred / Fat Loss</option>
+   <option value="tone">💪 Tone / Body Recomp</option>
+   <option value="bulk">⚡ Bulk / Hypertrophy</option>
+  </select>
+
+  <div style="background:#1a1a1a;padding:14px;border-radius:10px;border:1px solid #2a2a2a;margin-top:12px">
+   <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+    <span style="font-weight:bold;color:#E6C288"><i class="fas fa-chalkboard-user"></i> Trainer Mode</span>
+    <input type="checkbox" id="p-trainer-mode" onchange="toggleTrainerMode()" style="transform:scale(1.5)">
+   </label>
+   <p style="color:#555;font-size:0.75rem;margin:6px 0 0">Enables client switching for personal trainers.</p>
+  </div>
+
+  <button onclick="saveProfile()" class="save-btn" style="margin-top:14px;background:var(--primary);border:none">
+   <i class="fas fa-save"></i> Save Profile
+  </button>
+
+  <!-- ── BMI CALCULATOR ─── -->
+  <div class="bmi-section">
+   <h3>📐 BMI & Body Metrics</h3>
+   <div style="background:#0d0d0d;border-radius:8px;padding:10px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
+    <div style="flex:1"><div style="color:#888;font-size:0.75rem">Current BMI</div><div style="font-size:1.4rem;font-weight:bold;color:#E6C288" id="bmi-display-val">--</div></div>
+   </div>
+
+   <label class="input-label">Height</label>
+   <div class="height-unit-row">
+    <label><input type="radio" name="height-unit" value="cm" checked onchange="toggleHeightUnit('cm')"> cm</label>
+    <label><input type="radio" name="height-unit" value="ft" onchange="toggleHeightUnit('ft')"> ft + inches</label>
+   </div>
+   <div id="height-cm-wrap">
+    <input type="number" id="bmi-height-cm" class="spartan-input" placeholder="Height in cm (e.g. 175)">
+   </div>
+   <div id="height-ft-wrap">
+    <input type="number" id="bmi-height-ft" class="spartan-input" placeholder="Feet (e.g. 5)" style="flex:1;margin-bottom:0">
+    <input type="number" id="bmi-height-in" class="spartan-input" placeholder="Inches (e.g. 9)" style="flex:1;margin-bottom:0">
+   </div>
+
+   <label class="input-label" style="margin-top:10px">Weight</label>
+   <div style="display:flex;gap:8px;margin-bottom:10px">
+    <input type="number" id="bmi-weight-val" class="spartan-input" placeholder="Weight" style="flex:1;margin-bottom:0">
+    <select id="bmi-weight-unit" class="spartan-input" style="width:80px;margin-bottom:0">
+     <option value="kg">kg</option>
+     <option value="lbs">lbs</option>
+    </select>
+   </div>
+
+   <label class="input-label">Age</label>
+   <input type="number" id="bmi-age" class="spartan-input" placeholder="Age in years (e.g. 28)">
+
+   <button onclick="calcBMI()" class="save-btn" style="background:#9b59b6;border:none;margin-top:8px">
+    <i class="fas fa-calculator"></i> Calculate BMI & Metrics
+   </button>
+   <div id="bmi-result"></div>
+  </div>
+
+  <!-- ── PAST DATA + HISTORY ── -->
+  <div style="margin-top:16px;background:#111;border:1px solid #222;border-radius:12px;padding:14px">
+   <h3 style="color:var(--gold);margin:0 0 10px;font-size:0.9rem">📅 Historical Data</h3>
+   <button onclick="openPreHistory()" class="save-btn" style="background:#2c3e50;border:none;width:100%">
+    <i class="fas fa-history"></i> Add Past Workout Data
+   </button>
+   <p style="color:#555;font-size:0.72rem;margin:8px 0 0">Add exercises you did before using this app to build your historical charts.</p>
+  </div>
+
+  <div class="danger-zone">
+   <h3 style="color:#e74c3c;margin-bottom:8px"><i class="fas fa-triangle-exclamation"></i> Data Management</h3>
+   <button onclick="resetCurrentUserData()" class="danger-btn"><i class="fas fa-undo"></i> Reset Current User Data</button>
+   <button onclick="deleteCurrentUser()" class="danger-btn"><i class="fas fa-user-times"></i> Delete This User</button>
+   <button onclick="emergencyReset()" class="danger-btn full-reset"><i class="fas fa-bomb"></i> Factory Reset App</button>
+  </div>
+ </section>
+
+ <!-- ══ EXERCISE TRACKER MODAL ════════════════════════════════ -->
+ <div id="tracker-modal" class="modal">
+  <div class="modal-content">
+   <span class="close" onclick="closeModal()">&times;</span>
+   <h2 id="m-title" style="color:var(--gold);margin-top:0;padding-right:30px">Exercise</h2>
+
+   <!-- Instructions (always visible) -->
+   <div class="instruction-box"><p id="m-desc" style="margin:0"></p></div>
+
+   <!-- Progression tip (strength only) -->
+   <div class="prog-tip-box">
+    <div id="m-prog-tip">💪 Loading...</div>
+    <div id="m-pr-badge" class="pr-badge"></div>
+   </div>
+
+   <!-- Unit toggle (hidden for cardio) -->
+   <div id="unit-toggle-row" class="unit-toggle">
+    <div id="unit-kg" class="unit-opt active" onclick="setUnit('kg')">KG</div>
+    <div id="unit-lbs" class="unit-opt" onclick="setUnit('lbs')">LBS</div>
+   </div>
+
+   <!-- Today's session history -->
+   <div id="sets-history" class="history-container"></div>
+
+   <!-- ── CARDIO FIELDS ── -->
+   <div id="cardio-fields">
+    <div class="cardio-hdr">🏃 Log Cardio Session</div>
+    <div class="log-row">
+     <label>Duration (minutes)</label>
+     <input type="number" id="log-duration" class="spartan-input" placeholder="e.g. 30" oninput="estimateCardioCal()">
+    </div>
+    <div class="cardio-est" id="cardio-est">Enter duration to see calorie estimate.</div>
+    <div class="log-row">
+     <label>Calories Burned (or leave blank to auto-estimate)</label>
+     <input type="number" id="log-cardio-cal" class="spartan-input" placeholder="Auto-calculated if blank">
+    </div>
+   </div>
+
+   <!-- ── STRENGTH FIELDS ── -->
+   <div id="strength-fields">
+    <div class="log-row">
+     <label id="weight-label">Weight (KG)</label>
+     <input type="number" id="log-w" class="spartan-input" placeholder="e.g. 60">
+    </div>
+    <div class="log-row">
+     <label>Reps</label>
+     <input type="number" id="log-r" class="spartan-input" placeholder="e.g. 10">
+    </div>
+   </div>
+
+   <!-- Log button -->
+   <button onclick="saveSet()" id="log-btn" class="log-btn" style="background:var(--primary);color:#fff;border:none">
+    + LOG SET
+   </button>
+   <button id="rest-timer-btn" onclick="startRestTimer(90,'REST')" class="timer-btn">
+    <i class="fas fa-stopwatch"></i> Start Rest Timer (90s)
+   </button>
+  </div>
+ </div>
+
+ <!-- ══ BOTTOM NAV ═════════════════════════════════════════════ -->
+ <nav>
+  <button onclick="nav('dashboard')" class="active"><i class="fas fa-home"></i></button>
+  <button onclick="nav('library')"><i class="fas fa-dumbbell"></i></button>
+  <button onclick="nav('nutrition')"><i class="fas fa-apple-alt"></i></button>
+  <button onclick="nav('profile')"><i class="fas fa-user-circle"></i></button>
+ </nav>
+
+</div><!-- /#app-container -->
+
+<script src="app.js"></script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
+</body>
+</html>
