@@ -1,51 +1,67 @@
-name: Build SpartanFit APK
+name: Build SpartanFit v4 APK
+
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch: null
+    branches: [main]
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
+
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
-          java-version: 17
-          distribution: temurin
-      - name: Install npm dependencies
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install dependencies
         run: npm install
-      - name: Create www directory and copy web assets
-        run: |
-          mkdir -p www
-          cp index.html www/
-          cp app.js www/
-          cp style.css www/
-          cp manifest.json www/
-          cp sw.js www/
-          cp spartan_logo.png www/ || true
+
       - name: Add Android platform
         run: npx cap add android
-      - name: Sync web assets into Android project
+
+      - name: Sync web assets
         run: npx cap sync android
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-      - name: Accept Android SDK licenses
+
+      - name: Accept SDK licenses
         run: yes | sdkmanager --licenses || true
+
+      - name: Install ImageMagick
+        run: sudo apt-get install -y imagemagick
+
+      - name: Generate app icons
+        run: |
+          for entry in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
+            density="${entry%%:*}"
+            size="${entry##*:}"
+            dir="android/app/src/main/res/mipmap-${density}"
+            mkdir -p "$dir"
+            convert www/spartan_logo.png -resize "${size}x${size}" -background "#000000" -gravity center -extent "${size}x${size}" "$dir/ic_launcher.png"
+            convert www/spartan_logo.png -resize "${size}x${size}" -background "#000000" -gravity center -extent "${size}x${size}" "$dir/ic_launcher_round.png"
+          done
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
+
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SpartanFit-APK
+          name: SpartanFit-v4-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
