@@ -43,14 +43,37 @@ jobs:
 
       - name: Generate app icons
         run: |
+          # Check if source image exists and is valid
+          if [ ! -f "www/spartan_logo.png" ]; then
+            echo "Error: www/spartan_logo.png not found"
+            exit 1
+          fi
+          
+          # Verify image is readable
+          if ! identify www/spartan_logo.png > /dev/null 2>&1; then
+            echo "Error: www/spartan_logo.png is not a valid image"
+            exit 1
+          fi
+          
+          # Generate icons for each density
           for entry in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
             density="${entry%%:*}"
             size="${entry##*:}"
             dir="android/app/src/main/res/mipmap-${density}"
             mkdir -p "$dir"
-            convert www/spartan_logo.png -resize "${size}x${size}" -background "#000000" -gravity center -extent "${size}x${size}" "$dir/ic_launcher.png"
-            convert www/spartan_logo.png -resize "${size}x${size}" -background "#000000" -gravity center -extent "${size}x${size}" "$dir/ic_launcher_round.png"
+            
+            # Convert with explicit format specification
+            convert "www/spartan_logo.png[0]" -colorspace sRGB -resize "${size}x${size}!" -background "#000000" -gravity center -extent "${size}x${size}" -format png "$dir/ic_launcher.png"
+            convert "www/spartan_logo.png[0]" -colorspace sRGB -resize "${size}x${size}!" -background "#000000" -gravity center -extent "${size}x${size}" -format png "$dir/ic_launcher_round.png"
+            
+            # Verify output
+            if [ ! -f "$dir/ic_launcher.png" ]; then
+              echo "Error: Failed to generate $dir/ic_launcher.png"
+              exit 1
+            fi
           done
+          
+          echo "App icons generated successfully"
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
