@@ -1,0 +1,138 @@
+name: Build SpartanFit v4 APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+      # ── 1. Source ──────────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── 2. Runtimes ────────────────────────────────────────────────
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # ── 3. Dependencies ────────────────────────────────────────────
+      - name: Install Node dependencies
+        run: npm install
+
+      # ── 4. Guard: www/ must be committed ──────────────────────────
+      # The www/ folder is the pre-built web layer and must be tracked
+      # in git (it has no build step).  If this step fails, run:
+      #   git add www/ && git commit -m "Add web assets" && git push
+      - name: Verify web assets exist
+        run: |
+          if [ ! -d "www" ]; then
+            echo "❌  www/ directory is MISSING from the repository."
+            echo ""
+            echo "    Fix — commit it once, then every push will work:"
+            echo "      git add www/"
+            echo "      git commit -m 'Add web assets'"
+            echo "      git push"
+            echo ""
+            echo "    Also make sure .gitattributes is committed so PNG files"
+            echo "    are never corrupted by git line-ending conversion."
+            exit 1
+          fi
+          if [ ! -f "www/index.html" ]; then
+            echo "❌  www/index.html is missing."
+            exit 1
+          fi
+          echo "✅  www/ verified — $(ls www/ | wc -l | tr -d ' ') files present:"
+          ls -lh www/
+
+      # ── 5. Capacitor ──────────────────────────────────────────────
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Sync web assets → Android
+        run: npx cap sync android
+
+      # ── 6. Android SDK ────────────────────────────────────────────
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept SDK licenses
+        run: yes | sdkmanager --licenses || true
+
+      # ── 7. App icons ──────────────────────────────────────────────
+      - name: Install ImageMagick
+        run: sudo apt-get update -qq && sudo apt-get install -y imagemagick
+
+      - name: Validate logo and generate app icons
+        run: |
+          LOGO=""
+
+          # Try each candidate; skip silently if the header is corrupt
+          for CANDIDATE in "www/spartan_logo.png" "spartan_logo.png"; do
+            if [ -f "$CANDIDATE" ] && identify "$CANDIDATE" > /dev/null 2>&1; then
+              LOGO="$CANDIDATE"
+              echo "✅  Valid logo found: $LOGO"
+              break
+            elif [ -f "$CANDIDATE" ]; then
+              echo "⚠️   $CANDIDATE has a corrupt header — skipping."
+              echo "     Re-commit the PNG after adding .gitattributes to fix this permanently."
+            fi
+          done
+
+          # Fallback: auto-generate a simple branded placeholder
+          if [ -z "$LOGO" ]; then
+            echo "⚠️   No valid logo available. Generating placeholder icon..."
+            LOGO="/tmp/spartan_icon.png"
+            convert -size 512x512 xc:"#0d0d0d" \
+              -fill "#C0392B" \
+              -draw "circle 256,256 256,50" \
+              -fill "#E6C288" \
+              -font "DejaVu-Sans-Bold" -pointsize 190 \
+              -gravity Center -annotate 0 "SF" \
+              "$LOGO"
+            echo "✅  Placeholder icon created at $LOGO"
+          fi
+
+          # Emit into every mipmap density bucket
+          for ENTRY in "mdpi:48" "hdpi:72" "xhdpi:96" "xxhdpi:144" "xxxhdpi:192"; do
+            DENSITY="${ENTRY%%:*}"
+            SIZE="${ENTRY##*:}"
+            DIR="android/app/src/main/res/mipmap-${DENSITY}"
+            mkdir -p "$DIR"
+            convert "$LOGO" \
+              -resize "${SIZE}x${SIZE}" \
+              -background "#000000" -gravity center -extent "${SIZE}x${SIZE}" \
+              "$DIR/ic_launcher.png"
+            convert "$LOGO" \
+              -resize "${SIZE}x${SIZE}" \
+              -background "#000000" -gravity center -extent "${SIZE}x${SIZE}" \
+              "$DIR/ic_launcher_round.png"
+            echo "  ✔  mipmap-${DENSITY} (${SIZE}×${SIZE}px)"
+          done
+          echo "✅  All app icons generated"
+
+      # ── 8. Build ──────────────────────────────────────────────────
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      # ── 9. Artifact ───────────────────────────────────────────────
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpartanFit-v4-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
